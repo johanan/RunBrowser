@@ -1,0 +1,377 @@
+<html>
+<head>
+	<title>Run!</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+	<link href="css/bootstrap.css" rel="stylesheet">
+    <link href="css/bootstrap-responsive.css" rel="stylesheet">
+    <style>
+    	.none {
+    		display: none;
+    	}
+    	
+    	.modal * {
+    		margin: 0 auto;
+    	}
+    	
+    	#map{
+    		height: 50%;
+    	}
+    	
+    	#startPage{
+    		
+    	}
+    	
+    	#mapPage{
+    		
+    	}
+    </style>
+</head>
+<body class="container">
+	<div id="startPage">
+		<div class="hero-unit">
+			<h1>Run!</h1>
+			<p>Are you ready? Let's GO!</p>
+			<button class="btn btn-success btn-large" id="showMap"><i class="icon-map-marker icon-white"></i>START!</button>
+		</div>
+		<table class="table table-striped" id="savedRuns">
+		  <thead>
+		    <tr>
+		      <th>Date</th>
+		      <th>Distance</th>
+		      <th>View</th>
+		    </tr>
+		  </thead>
+		  <tbody >
+		  </tbody>
+		</table>
+		
+	</div>
+	<div id="mapPage" class="none">
+		<div id="timeDist">
+			<div id="time">Time:</div>
+			<div id="distance">Distance:</div>
+		</div>
+		<div id="map"></div>
+		<audio id="audio" src="test.mp3" onended="this.play()" autobuffer></audio>
+		<button class="btn btn-info" id="stop">STOP!</button>
+		<button class="btn btn-info" id="back"><i class="icon-chevron-left icon-white"></i>Back</button>
+		
+	</div>
+	<div class="modal none" id="saveModal">
+		<div class="modal-header">
+			Save?
+		</div>
+		<div class="modal-body">
+    		<p>Do you want to save your run?</p>
+  		</div>
+  		<div class="modal-footer">
+			<button id="saveRun" class="btn btn-success btn-large">Save</button>
+			<button id="clearRun" class="btn btn-danger btn-large">Clear</button>
+		</div>
+	</div>
+	<div class="modal-backdrop none" id="backdrop"></div>
+
+<script src='http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1'></script>
+<script src="http://maps.google.com/maps/api/js?v=3.6&amp;sensor=false"></script>
+<script src="http://www.openlayers.org/api/OpenLayers.js"></script>
+<script>
+
+function appController(){
+	this.mapView = null;
+	this.runPath = null;
+	this.watchid = null;
+	
+	//cached elements
+	this.audio = document.getElementById('audio');
+	this.showMapButton = document.getElementById('showMap');
+	this.stop = document.getElementById('stop');
+	this.backdrop = document.getElementById('backdrop');
+	this.saveButton = document.getElementById('saveRun');
+	this.clearButton = document.getElementById('clearRun');
+	this.backButton = document.getElementById('back');
+	this.table = document.getElementById('savedRuns');
+	
+	this.addEvents = function(){
+		var This = this;
+		this.showMapButton.addEventListener("click", function(){This.showMap()});
+		this.stop.addEventListener("click", function(){This.stopMap()});
+		this.saveButton.addEventListener("click", function(){This.saveRun()});
+		this.clearButton.addEventListener("click", function(){This.clearRun()});
+		this.backButton.addEventListener("click", function(){This.clearRun()});
+	}
+	
+	this.saveRun = function(){
+		console.log(this);
+		//var This = window.ac;
+		//console.log(This);
+		localStorage.setItem(this.runPath.startTime, JSON.stringify(this.runPath));
+		
+		this.audio.pause();
+		
+		if(this.mapView != null){
+			this.mapView.destroy();
+		}
+		
+		if(this.watchid != null){
+			navigator.geolocation.clearWatch(this.watchid);
+			this.watchid = null;
+		}
+		
+		if(this.runPath != null){
+			this.runPath = null;
+		}
+		
+		this.backdrop.classList.add('none');
+		document.getElementById('saveModal').classList.add('none');
+		
+		document.getElementById('mapPage').classList.add('none');
+		document.getElementById('startPage').classList.remove('none');
+		
+		this.showHome();
+	}
+	
+	this.clearRun = function(){
+		this.audio.pause();
+		
+		if(this.mapView != null){
+			this.mapView.destroy();
+		}
+		
+		if(this.watchid != null){
+			navigator.geolocation.clearWatch(this.watchid);
+			this.watchid = null;
+		}
+		
+		if(this.runPath != null){
+			this.runPath = null;
+		}
+		
+		this.backdrop.classList.add('none');
+		document.getElementById('saveModal').classList.add('none');
+		
+		document.getElementById('mapPage').classList.add('none');
+		document.getElementById('startPage').classList.remove('none');
+	}
+	
+	this.showHome = function(){
+		//clear the old table out
+		var This = this;
+		for(var i=this.table.rows.length;i>1;i--) {
+			this.table.deleteRow(i-1);
+		}
+		
+		for (var key in localStorage){
+			var old = JSON.parse(localStorage.getItem(key));
+		   
+		   var rowCount = this.table.rows.length;
+			var row = this.table.insertRow(rowCount);
+			var celldate = row.insertCell(0);
+		    var datetext = document.createTextNode(old.startTime);
+		    celldate.appendChild(datetext);
+		 
+		    var celldist = row.insertCell(1);
+		    var disttext = document.createTextNode(old.distance);
+		    celldist.appendChild(disttext);
+		 
+		    var cellbutton = row.insertCell(2);
+		    var butt = document.createElement("button");
+		    butt.className = "btn btn-info runView";
+		    butt.innerHTML = "View Run";
+		    butt.setAttribute('data-key', key);
+		    butt.addEventListener('click', function(evt){This.loadSavedRun(evt.target)});
+		    cellbutton.appendChild(butt);
+		}
+	}
+	
+	this.loadSavedRun = function(target){
+		var runp = new runPath();
+		var old = JSON.parse(localStorage.getItem(target.getAttribute('data-key')));
+		console.log(old);
+		
+		runp.startTime = old.startTime;
+		runp.distance = old.distance;
+		
+		document.getElementById('mapPage').classList.remove('none');
+		document.getElementById('startPage').classList.add('none');
+		
+		this.stop.classList.add('none');
+		this.backButton.classList.remove('none');
+	
+		if(this.mapView != null){
+			this.mapView.destroy();
+		}
+		
+		this.mapView = new mapView();
+		
+		for(var i=0; i<old.pointArray.length; i++ ){
+			this.mapView.addPoint(old.pointArray[i]);
+		}
+		
+		//this.mapView.updateTimeDistance()
+	}
+}
+
+appController.prototype.showMap = function(){
+	document.getElementById('mapPage').classList.remove('none');
+	document.getElementById('startPage').classList.add('none');
+	
+	this.stop.classList.remove('none');
+	this.backButton.classList.add('none');
+	
+	if(this.mapView != null){
+		this.mapView.destroy();
+	}
+	
+	this.mapView = new mapView();
+	this.runPath = new runPath();
+	var This = this;
+	this.watchid = navigator.geolocation.watchPosition(function(location){This.GetLocation(location)}, errorCallback, {enableHighAccuracy:true, maximumAge: 10000, timeout: 10000 });
+	
+	this.audio.play();
+}
+
+appController.prototype.stopMap = function(){
+	this.backdrop.classList.remove('none');
+	document.getElementById('saveModal').classList.remove('none');
+}
+
+appController.prototype.GetLocation = function(location){
+	if(ptTest = this.runPath.addPoint(location))
+	{
+		this.mapView.addPoint(location);
+		this.mapView.updateTimeDistance(this.runPath.getElapsed(), this.runPath.getDistance());
+		console.log(this.runPath);
+    }
+}
+
+
+function mapView(){
+	this.map = new OpenLayers.Map("map");
+	this.proj = new OpenLayers.Projection("EPSG:4326");
+	this.line = new OpenLayers.Geometry.LineString([]);
+	this.lineLayer = new OpenLayers.Layer.Vector("Line Layer");
+	
+	var layer = new OpenLayers.Layer.OSM();
+	
+	this.map.addControl(new OpenLayers.Control.DrawFeature(this.lineLayer, OpenLayers.Handler.Path));                                     
+    var style = { strokeColor: '#0000ff', strokeOpacity: 0.5, strokeWidth: 5 };
+
+    var lineFeature = new OpenLayers.Feature.Vector(this.line, null, style);
+    this.lineLayer.addFeatures([lineFeature]);
+     
+	this.map.addLayers([layer, this.lineLayer]);
+	this.map.zoomToMaxExtent();
+	
+	this.updateTimeDistance = function(time, distance){
+		var timeli = document.getElementById('time').innerHTML = "Time: " + time;
+		var distli = document.getElementById('distance').innerHTML = "Distance: " + distance;
+	}
+	
+}
+
+mapView.prototype.addPoint = function(location){
+		opLonLat = new OpenLayers.LonLat( location.coords.longitude, location.coords.latitude );
+		opLonLat.transform(this.proj, this.map.getProjectionObject());
+		point = new OpenLayers.Geometry.Point(opLonLat.lon, opLonLat.lat);
+		
+		this.line.addComponent(point);
+		this.lineLayer.redraw();
+		this.map.setCenter(opLonLat, 14);
+	}
+	
+mapView.prototype.destroy = function(){
+		this.map.destroy();
+	}
+
+if (typeof(Number.prototype.toRad) === "undefined") {
+  Number.prototype.toRad = function() {
+    return this * Math.PI / 180;
+  }
+}
+
+	function runPath() {
+		this.distance = 0,
+		this.startTime = 0,
+		this.lastUpdateTime = 0,
+		this.pointArray = [],
+		this.addPoint = function(point) {
+			if(point.coords.accuracy <= 200 && (point.timestamp - this.lastUpdateTime)>= 6000 || this.lastUpdateTime == 0)
+			{
+				this.pointArray.push(point);
+				this.lastUpdateTime = point.timestamp;
+				
+				if(this.startTime == 0){
+					this.startTime = point.timestamp;
+				}
+				
+				if(this.pointArray.length >= 2){
+					var arraylen = this.pointArray.length;
+					this.distance += this.computeDistance(this.pointArray[arraylen -2], this.pointArray[arraylen -1]);
+				}
+				
+				return point;
+			}
+			
+			return false;
+		},
+		
+		this.computeDistance = function(point1, point2){
+		
+			var lon1 = point1.coords.longitude;
+			var lon2 = point2.coords.longitude;
+			var lat1 = point1.coords.latitude;
+			var lat2 = point2.coords.latitude;
+			
+			var R = 3958.7558657440545; // miles
+			var dLat = (lat2-lat1).toRad();
+			var dLon = (lon2-lon1).toRad();
+			var lat1 = lat1.toRad();
+			var lat2 = lat2.toRad();
+			
+			var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+			        Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2); 
+			var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+			var d = R * c;
+			
+			return d;
+		},
+		
+		this.getDistance = function (){
+			return this.distance;
+		},
+		
+		this.getElapsed = function(){
+			return (this.lastUpdateTime - this.startTime)/60000; //time elapsed in minutes
+		},
+		
+		this.getCurrentMph = function(){
+			return (this.pointArray[this.pointArray.length -1].coords.speed * 2.23693629);
+		},
+		
+		this.getMph = function(){
+			return this.distance / (this.getElapsed()/60); //mph
+		},
+		
+		this.getMinMile = function(){
+			return  this.getElapsed() / this.distance;
+		}
+	}
+
+function init(){
+	var ac = new appController();
+	ac.addEvents();
+	ac.showHome();
+}
+
+window.addEventListener( 'DOMContentLoaded', init, false);                
+</script>
+<script>
+
+function errorCallback(error) {
+	alert(error.code);
+	console.log(error);
+}
+</script>
+</body>
+</html>
