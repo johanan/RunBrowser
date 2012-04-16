@@ -1,7 +1,8 @@
 <html>
 <head>
-	<title>Run!</title>
+	<title>RunBrowser!</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="apple-mobile-web-app-capable" content="yes" />
 	
 	<link href="css/bootstrap.css" rel="stylesheet">
     <link href="css/bootstrap-responsive.css" rel="stylesheet">
@@ -30,7 +31,7 @@
 <body class="container">
 	<div id="startPage">
 		<div class="hero-unit">
-			<h1>Run!</h1>
+			<h1>Run Browser!</h1>
 			<p>Are you ready? Let's GO!</p>
 			<button class="btn btn-success btn-large" id="showMap"><i class="icon-map-marker icon-white"></i>START!</button>
 		</div>
@@ -45,7 +46,7 @@
 		  <tbody >
 		  </tbody>
 		</table>
-		
+		<audio id="audio" src="08.mp3" onended="this.play()" controls autobuffer></audio>
 	</div>
 	<div id="mapPage" class="none">
 		<div id="timeDist">
@@ -53,14 +54,14 @@
 			<div id="distance">Distance:</div>
 		</div>
 		<div id="map"></div>
-		<audio id="audio" src="test.mp3" onended="this.play()" autobuffer></audio>
+		
 		<button class="btn btn-info" id="stop">STOP!</button>
 		<button class="btn btn-info" id="back"><i class="icon-chevron-left icon-white"></i>Back</button>
 		
 	</div>
 	<div class="modal none" id="saveModal">
 		<div class="modal-header">
-			Save?
+			<h3>Save or Clear?</h3>
 		</div>
 		<div class="modal-body">
     		<p>Do you want to save your run?</p>
@@ -68,6 +69,17 @@
   		<div class="modal-footer">
 			<button id="saveRun" class="btn btn-success btn-large">Save</button>
 			<button id="clearRun" class="btn btn-danger btn-large">Clear</button>
+		</div>
+	</div>
+	<div class="modal none" id="errorModal">
+		<div class="modal-header">
+			<h3>Something went wrong</h3>
+		</div>
+		<div class="modal-body">
+    		<p>I'm sorry but I cannot find you. </p>
+  		</div>
+  		<div class="modal-footer">
+			<button id="clearError" class="btn btn-danger btn-large">Clear</button>
 		</div>
 	</div>
 	<div class="modal-backdrop none" id="backdrop"></div>
@@ -86,11 +98,15 @@ function appController(){
 	this.audio = document.getElementById('audio');
 	this.showMapButton = document.getElementById('showMap');
 	this.stop = document.getElementById('stop');
-	this.backdrop = document.getElementById('backdrop');
 	this.saveButton = document.getElementById('saveRun');
 	this.clearButton = document.getElementById('clearRun');
 	this.backButton = document.getElementById('back');
 	this.table = document.getElementById('savedRuns');
+	//modals
+	this.errorModal = document.getElementById('errorModal');
+	this.clearError = document.getElementById('clearError');
+	this.saveModal = document.getElementById('saveModal');
+	this.backdrop = document.getElementById('backdrop');
 	
 	this.addEvents = function(){
 		var This = this;
@@ -99,6 +115,7 @@ function appController(){
 		this.saveButton.addEventListener("click", function(){This.saveRun()});
 		this.clearButton.addEventListener("click", function(){This.clearRun()});
 		this.backButton.addEventListener("click", function(){This.clearRun()});
+		this.clearError.addEventListener("click", function(){This.clearRun()});
 	}
 	
 	this.saveRun = function(){
@@ -148,7 +165,8 @@ function appController(){
 		}
 		
 		this.backdrop.classList.add('none');
-		document.getElementById('saveModal').classList.add('none');
+		this.saveModal.classList.add('none');
+		this.errorModal.classList.add('none');
 		
 		document.getElementById('mapPage').classList.add('none');
 		document.getElementById('startPage').classList.remove('none');
@@ -210,6 +228,11 @@ function appController(){
 		
 		//this.mapView.updateTimeDistance()
 	}
+	
+	this.errorHandler = function(error){	
+		this.backdrop.classList.remove('none');
+		this.errorModal.classList.remove('none');
+	}
 }
 
 appController.prototype.showMap = function(){
@@ -226,7 +249,7 @@ appController.prototype.showMap = function(){
 	this.mapView = new mapView();
 	this.runPath = new runPath();
 	var This = this;
-	this.watchid = navigator.geolocation.watchPosition(function(location){This.GetLocation(location)}, errorCallback, {enableHighAccuracy:true, maximumAge: 10000, timeout: 10000 });
+	this.watchid = navigator.geolocation.watchPosition(function(location){This.GetLocation(location)}, function(error){This.errorHandler(error)}, {enableHighAccuracy:true, maximumAge: 10000, timeout: 10000 });
 	
 	this.audio.play();
 }
@@ -362,16 +385,13 @@ function init(){
 	var ac = new appController();
 	ac.addEvents();
 	ac.showHome();
+	//hide the top bar in mobile safari
+	setTimeout(function(){
+    window.scrollTo(0, 0);
+    }, 0);
 }
 
 window.addEventListener( 'DOMContentLoaded', init, false);                
-</script>
-<script>
-
-function errorCallback(error) {
-	alert(error.code);
-	console.log(error);
-}
 </script>
 </body>
 </html>
