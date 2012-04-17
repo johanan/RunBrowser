@@ -31,13 +31,14 @@
 <body class="container">
 	<div id="startPage">
 		<div class="hero-unit">
-			<h1>Run Browser!</h1>
+			<h2>Run Browser!</h2>
 			<p>Are you ready? Let's GO!</p>
 			<button class="btn btn-success btn-large" id="showMap"><i class="icon-map-marker icon-white"></i>START!</button>
 		</div>
 		<table class="table table-striped" id="savedRuns">
 		  <thead>
 		    <tr>
+		   	  <th></th>
 		      <th>Date</th>
 		      <th>Distance</th>
 		      <th>View</th>
@@ -46,19 +47,37 @@
 		  <tbody >
 		  </tbody>
 		</table>
-		<audio id="audio" src="08.mp3" onended="this.play()" controls autobuffer></audio>
 	</div>
 	<div id="mapPage" class="none">
-		<div id="timeDist">
-			<div id="time">Time:</div>
-			<div id="distance">Distance:</div>
-		</div>
+		<table class="table table-striped" id="savedRuns">
+		  <tbody >
+		  	<tr>
+		  		<td>Time:</td>
+		  		<td><span id="time"></span></td>
+		  	</tr>
+		  	<tr>
+		  		<td>Distance:</td>
+		  		<td><span id="distance"></span></td>
+		  	</tr>
+		  	<tr>
+		  		<td>Speed:</td>
+		  		<td><span id="mph"></span></td>
+		  	</tr>
+		  	<tr>
+		  		<td>Min/Mile:</td>
+		  		<td><span id="minMile"></span></td>
+		  	</tr>
+		  	<tr>
+		  		<td colspan="2">
+		  			<button class="btn btn-info" id="stop">Done</button>
+					<button class="btn btn-info" id="back"><i class="icon-chevron-left icon-white"></i>Back</button>
+		  		</td>
+		  	</tr>
+		  </tbody>
+		</table>
 		<div id="map"></div>
-		
-		<button class="btn btn-info" id="stop">STOP!</button>
-		<button class="btn btn-info" id="back"><i class="icon-chevron-left icon-white"></i>Back</button>
-		
 	</div>
+	<audio id="audio" src="08.mp3" loop="true" class="none" controls autobuffer></audio>
 	<div class="modal none" id="saveModal">
 		<div class="modal-header">
 			<h3>Save or Clear?</h3>
@@ -184,31 +203,53 @@ function appController(){
 		   
 		   var rowCount = this.table.rows.length;
 			var row = this.table.insertRow(rowCount);
-			var celldate = row.insertCell(0);
-		    var datetext = document.createTextNode(old.startTime);
+			
+			var cellRemove = row.insertCell(0);
+			var rm = document.createElement("button");
+		    rm.className = "btn btn-danger";
+		    rm.innerHTML = '<i class="icon-remove icon-white"></i>';
+		    rm.setAttribute('data-key', key);
+		    rm.addEventListener('click', function(evt){This.removeSavedRun(evt.target)});
+		    cellRemove.appendChild(rm);
+			
+			var celldate = row.insertCell(1);
+			var startDate = new Date(old.startTime);
+		    var datetext = document.createTextNode(startDate.toDateString());
 		    celldate.appendChild(datetext);
 		 
-		    var celldist = row.insertCell(1);
-		    var disttext = document.createTextNode(old.distance);
+		    var celldist = row.insertCell(2);
+		    var disttext = document.createTextNode(Math.round(old.distance*100)/100);
 		    celldist.appendChild(disttext);
 		 
-		    var cellbutton = row.insertCell(2);
+		    var cellbutton = row.insertCell(3);
 		    var butt = document.createElement("button");
 		    butt.className = "btn btn-info runView";
-		    butt.innerHTML = "View Run";
+		    butt.innerHTML = '<i class="icon-chevron-right icon-white"></i>';
 		    butt.setAttribute('data-key', key);
 		    butt.addEventListener('click', function(evt){This.loadSavedRun(evt.target)});
 		    cellbutton.appendChild(butt);
 		}
+		
+		setTimeout(function(){
+    	window.scrollTo(0, 0);
+   		 }, 0);
 	}
 	
 	this.loadSavedRun = function(target){
+		var datakey;
+		if(target.getAttribute('data-key')){
+			datakey = target.getAttribute('data-key');
+		}else{
+			datakey = target.parentNode.getAttribute('data-key');
+		}
+		
 		var runp = new runPath();
-		var old = JSON.parse(localStorage.getItem(target.getAttribute('data-key')));
-		console.log(old);
+		var old = JSON.parse(localStorage.getItem(datakey));
 		
 		runp.startTime = old.startTime;
 		runp.distance = old.distance;
+		runp.lastUpdateTime = old.lastUpdateTime;
+		runp.pointArray = old.pointArray;
 		
 		document.getElementById('mapPage').classList.remove('none');
 		document.getElementById('startPage').classList.add('none');
@@ -226,7 +267,20 @@ function appController(){
 			this.mapView.addPoint(old.pointArray[i]);
 		}
 		
-		//this.mapView.updateTimeDistance()
+		this.mapView.updateTimeDistance(runp.getElapsedFormat(), runp.getDistance());
+		this.mapView.updateSpeeds(runp.getCurrentMph(), runp.getMinMile());
+	}
+	
+	this.removeSavedRun = function(target){
+		var datakey;
+		if(target.getAttribute('data-key')){
+			datakey = target.getAttribute('data-key');
+		}else{
+			datakey = target.parentNode.getAttribute('data-key');
+		}
+		
+		localStorage.removeItem(datakey);
+		this.showHome();
 	}
 	
 	this.errorHandler = function(error){	
@@ -252,6 +306,10 @@ appController.prototype.showMap = function(){
 	this.watchid = navigator.geolocation.watchPosition(function(location){This.GetLocation(location)}, function(error){This.errorHandler(error)}, {enableHighAccuracy:true, maximumAge: 10000, timeout: 10000 });
 	
 	this.audio.play();
+	
+	setTimeout(function(){
+    window.scrollTo(0, 0);
+    }, 0);
 }
 
 appController.prototype.stopMap = function(){
@@ -263,8 +321,8 @@ appController.prototype.GetLocation = function(location){
 	if(ptTest = this.runPath.addPoint(location))
 	{
 		this.mapView.addPoint(location);
-		this.mapView.updateTimeDistance(this.runPath.getElapsed(), this.runPath.getDistance());
-		console.log(this.runPath);
+		this.mapView.updateTimeDistance(this.runPath.getElapsedFormat(), this.runPath.getDistance());
+		this.mapView.updateSpeeds(this.runPath.getCurrentMph(), this.runPath.getMinMile());
     }
 }
 
@@ -287,8 +345,13 @@ function mapView(){
 	this.map.zoomToMaxExtent();
 	
 	this.updateTimeDistance = function(time, distance){
-		var timeli = document.getElementById('time').innerHTML = "Time: " + time;
-		var distli = document.getElementById('distance').innerHTML = "Distance: " + distance;
+		document.getElementById('time').innerHTML =  time;
+		document.getElementById('distance').innerHTML =  distance;
+	}
+	
+	this.updateSpeeds = function(mph, minMile){
+		document.getElementById('mph').innerHTML =  mph;
+		document.getElementById('minMile').innerHTML =  minMile;
 	}
 	
 }
@@ -322,10 +385,10 @@ if (typeof(Number.prototype.toRad) === "undefined") {
 			if(point.coords.accuracy <= 200 && (point.timestamp - this.lastUpdateTime)>= 6000 || this.lastUpdateTime == 0)
 			{
 				this.pointArray.push(point);
-				this.lastUpdateTime = point.timestamp;
+				this.lastUpdateTime = new Date().getTime();
 				
 				if(this.startTime == 0){
-					this.startTime = point.timestamp;
+					this.startTime = new Date().getTime();
 				}
 				
 				if(this.pointArray.length >= 2){
@@ -361,15 +424,26 @@ if (typeof(Number.prototype.toRad) === "undefined") {
 		},
 		
 		this.getDistance = function (){
-			return this.distance;
+			return Math.round(this.distance*100)/100;
 		},
 		
 		this.getElapsed = function(){
 			return (this.lastUpdateTime - this.startTime)/60000; //time elapsed in minutes
 		},
 		
+		this.getElapsedFormat = function(){
+			var diff = this.lastUpdateTime - this.startTime;
+			//get minutes
+			var mins = Math.floor(diff/1000/60);
+			diff -= mins*60000;
+			//get seconds
+			var secs = Math.floor(diff/1000);
+			secs = (secs < 10 ? '0' : '') + secs
+			return mins + ":" + secs;
+		},
+		
 		this.getCurrentMph = function(){
-			return (this.pointArray[this.pointArray.length -1].coords.speed * 2.23693629);
+			return (this.pointArray[this.pointArray.length -1].coords.speed * 2.23693629).toPrecision(4);
 		},
 		
 		this.getMph = function(){
@@ -377,7 +451,11 @@ if (typeof(Number.prototype.toRad) === "undefined") {
 		},
 		
 		this.getMinMile = function(){
-			return  this.getElapsed() / this.distance;
+			var minMile = this.getElapsed() / this.distance;
+			if (isNaN(minMile)){
+				return 0;
+			}
+			return  minMile.toPrecision(4);
 		}
 	}
 
