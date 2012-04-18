@@ -4,13 +4,15 @@ function appController(){
 	this.watchid = null;
 	
 	//cached elements
-	this.audio = document.getElementById('audio');
+	this.mapPage = document.getElementById('mapPage');
+	this.startPage = document.getElementById('startPage');
 	this.showMapButton = document.getElementById('showMap');
 	this.stop = document.getElementById('stop');
 	this.saveButton = document.getElementById('saveRun');
 	this.clearButton = document.getElementById('clearRun');
 	this.backButton = document.getElementById('back');
 	this.table = document.getElementById('savedRuns');
+	
 	//modals
 	this.errorModal = document.getElementById('errorModal');
 	this.clearError = document.getElementById('clearError');
@@ -30,8 +32,6 @@ function appController(){
 	this.saveRun = function(){
 		localStorage.setItem(this.runPath.startTime, JSON.stringify(this.runPath));
 		
-		this.audio.pause();
-		
 		if(this.mapView != null){
 			this.mapView.destroy();
 		}
@@ -46,17 +46,15 @@ function appController(){
 		}
 		
 		this.backdrop.classList.add('none');
-		document.getElementById('saveModal').classList.add('none');
+		this.saveModal.classList.add('none');
 		
-		document.getElementById('mapPage').classList.add('none');
-		document.getElementById('startPage').classList.remove('none');
+		this.mapPage.classList.add('none');
+		this.startPage.classList.remove('none');
 		
 		this.showHome();
 	}
 	
 	this.clearRun = function(){
-		this.audio.pause();
-		
 		if(this.mapView != null){
 			this.mapView.destroy();
 		}
@@ -74,8 +72,8 @@ function appController(){
 		this.saveModal.classList.add('none');
 		this.errorModal.classList.add('none');
 		
-		document.getElementById('mapPage').classList.add('none');
-		document.getElementById('startPage').classList.remove('none');
+		this.mapPage.classList.add('none');
+		this.startPage.classList.remove('none');
 	}
 	
 	this.showHome = function(){
@@ -113,7 +111,7 @@ function appController(){
 		 
 		    var cellbutton = row.insertCell(3);
 		    var butt = document.createElement("button");
-		    butt.className = "btn btn-info runView";
+		    butt.className = "btn btn-inverse";
 		    butt.innerHTML = '<i class="icon-chevron-right icon-white"></i>';
 		    butt.setAttribute('data-key', key);
 		    butt.addEventListener('click', function(evt){This.loadSavedRun(evt.target)});
@@ -123,10 +121,6 @@ function appController(){
 		if(this.table.rows.length == 1){
 			this.table.classList.add('none');
 		}
-		
-		setTimeout(function(){
-    	window.scrollTo(0, 0);
-   		 }, 0);
 	}
 	
 	this.loadSavedRun = function(target){
@@ -145,8 +139,8 @@ function appController(){
 		runp.lastUpdateTime = old.lastUpdateTime;
 		runp.pointArray = old.pointArray;
 		
-		document.getElementById('mapPage').classList.remove('none');
-		document.getElementById('startPage').classList.add('none');
+		this.mapPage.classList.remove('none');
+		this.startPage.classList.add('none');
 		
 		this.stop.classList.add('none');
 		this.backButton.classList.remove('none');
@@ -181,58 +175,42 @@ function appController(){
 		this.backdrop.classList.remove('none');
 		this.errorModal.classList.remove('none');
 	}
-}
 
-appController.prototype.showMap = function(){
-	document.getElementById('mapPage').classList.remove('none');
-	document.getElementById('startPage').classList.add('none');
-	
-	this.stop.classList.remove('none');
-	this.backButton.classList.add('none');
-	
-	if(this.mapView != null){
-		this.mapView.destroy();
+	this.showMap = function(){
+		this.mapPage.classList.remove('none');
+		this.startPage.classList.add('none');
+		
+		this.stop.classList.remove('none');
+		this.backButton.classList.add('none');
+		
+		if(this.mapView != null){
+			this.mapView.destroy();
+		}
+		
+		this.mapView = new mapView();
+		this.runPath = new runPath();
+		var This = this;
+		this.watchid = navigator.geolocation.watchPosition(function(location){This.GetLocation(location)}, function(error){This.errorHandler(error)}, {enableHighAccuracy:true, maximumAge: 5000, timeout: 12000 });
+		
+		setTimeout(function(){
+	    window.scrollTo(0, 0);
+	    }, 0);
 	}
 	
-	this.mapView = new mapView();
-	this.runPath = new runPath();
-	var This = this;
-	this.watchid = navigator.geolocation.watchPosition(function(location){This.GetLocation(location)}, function(error){This.errorHandler(error)}, {enableHighAccuracy:true, maximumAge: 10000, timeout: 10000 });
+	this.stopMap = function(){
+		this.backdrop.classList.remove('none');
+		this.saveModal.classList.remove('none');
+	}
 	
-	this.audio.play();
-	
-	var This=this;
-	
-	/*this.audio.addEventListener('timeupdate', function(){
-		console.log(this);
-		if(this.currentTime == this.duration -2){
-			console.log(this);
-			this.pause();
-			this.currentTime = 0;
-			this.play();
-		}
-		});*/
-		
-	this.audio.addEventListener('ended', this.play());
-	//this.audio.currentTime=30;
-	
-	setTimeout(function(){
-    window.scrollTo(0, 0);
-    }, 0);
-}
+	this.GetLocation = function(location){
+		if(ptTest = this.runPath.addPoint(location))
+		{
+			this.mapView.addPoint(location);
+			this.mapView.updateTimeDistance(this.runPath.getElapsedFormat(), this.runPath.getDistance());
+			this.mapView.updateSpeeds(this.runPath.getCurrentMph(), this.runPath.getMinMile());
+	    }
+	}
 
-appController.prototype.stopMap = function(){
-	this.backdrop.classList.remove('none');
-	document.getElementById('saveModal').classList.remove('none');
-}
-
-appController.prototype.GetLocation = function(location){
-	if(ptTest = this.runPath.addPoint(location))
-	{
-		this.mapView.addPoint(location);
-		this.mapView.updateTimeDistance(this.runPath.getElapsedFormat(), this.runPath.getDistance());
-		this.mapView.updateSpeeds(this.runPath.getCurrentMph(), this.runPath.getMinMile());
-    }
 }
 
 
@@ -241,6 +219,11 @@ function mapView(){
 	this.proj = new OpenLayers.Projection("EPSG:4326");
 	this.line = new OpenLayers.Geometry.LineString([]);
 	this.lineLayer = new OpenLayers.Layer.Vector("Line Layer");
+	
+	this.timeSpan = document.getElementById('time');
+	this.distance = document.getElementById('distance');
+	this.mph = document.getElementById('mph');
+	this.minMile = document.getElementById('minMile');
 	
 	var layer = new OpenLayers.Layer.OSM();
 	
@@ -251,16 +234,16 @@ function mapView(){
     this.lineLayer.addFeatures([lineFeature]);
      
 	this.map.addLayers([layer, this.lineLayer]);
-	this.map.zoomToMaxExtent();
+	this.map.zoomTo(15);
 	
 	this.updateTimeDistance = function(time, distance){
-		document.getElementById('time').innerHTML =  time;
-		document.getElementById('distance').innerHTML =  distance;
+		this.timeSpan.innerHTML =  time;
+		this.distance.innerHTML =  distance;
 	}
 	
 	this.updateSpeeds = function(mph, minMile){
-		document.getElementById('mph').innerHTML =  mph;
-		document.getElementById('minMile').innerHTML =  minMile;
+		this.mph.innerHTML =  mph;
+		this.minMile.innerHTML =  minMile;
 	}
 	
 }
@@ -272,7 +255,7 @@ mapView.prototype.addPoint = function(location){
 		
 		this.line.addComponent(point);
 		this.lineLayer.redraw();
-		this.map.setCenter(opLonLat, 14);
+		this.map.setCenter(opLonLat);
 	}
 	
 mapView.prototype.destroy = function(){
@@ -291,13 +274,14 @@ if (typeof(Number.prototype.toRad) === "undefined") {
 		this.lastUpdateTime = 0,
 		this.pointArray = [],
 		this.addPoint = function(point) {
-			if(point.coords.accuracy <= 200 && (point.timestamp - this.lastUpdateTime)>= 6000 || this.lastUpdateTime == 0)
+			if(point.coords.accuracy <= 25 && (point.timestamp - this.lastUpdateTime)>= 6000 || this.lastUpdateTime == 0)
 			{
+				var now = new Date().getTime();
 				this.pointArray.push(point);
-				this.lastUpdateTime = new Date().getTime();
+				this.lastUpdateTime = now;
 				
 				if(this.startTime == 0){
-					this.startTime = new Date().getTime();
+					this.startTime = now;
 				}
 				
 				if(this.pointArray.length >= 2){
@@ -333,7 +317,7 @@ if (typeof(Number.prototype.toRad) === "undefined") {
 		},
 		
 		this.getDistance = function (){
-			return Math.round(this.distance*100)/100;
+			return this.distance.toPrecision(4);
 		},
 		
 		this.getElapsed = function(){

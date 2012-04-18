@@ -24,6 +24,8 @@
 			<h1 class="hidden-phone">RunBrowser!</h1>
 			<h2 class="visible-phone">RunBrowser!</h2>
 			<p>Are you ready? Let's GO!</p>
+			<p class="hidden-phone">This site was designed for a phone, but you are more then welcome to run around with your laptop.</p>
+			<p class="visible-phone">Don't forget to set your phone to the highest auto-lock setting.</p>
 			<button class="btn btn-success btn-large" id="showMap"><i class="icon-map-marker icon-white"></i>START!</button>
 		</div>
 		<table class="table table-striped" id="savedRuns">
@@ -60,15 +62,14 @@
 		  	</tr>
 		  	<tr>
 		  		<td colspan="2">
-		  			<button class="btn btn-info" id="stop">Done</button>
-					<button class="btn btn-info" id="back"><i class="icon-chevron-left icon-white"></i>Back</button>
+		  			<button class="btn btn-inverse" id="stop">Done</button>
+					<button class="btn btn-inverse" id="back"><i class="icon-chevron-left icon-white"></i>Back</button>
 		  		</td>
 		  	</tr>
 		  </tbody>
 		</table>
 		<div id="map"></div>
 	</div>
-	<audio id="audio" src="08.mp3" preload></audio>
 	<div class="modal none" id="saveModal">
 		<div class="modal-header">
 			<h3>Save or Clear?</h3>
@@ -77,8 +78,8 @@
     		<p>Do you want to save your run?</p>
   		</div>
   		<div class="modal-footer">
-			<button id="saveRun" class="btn btn-success btn-large">Save</button>
-			<button id="clearRun" class="btn btn-danger btn-large">Clear</button>
+			<button id="saveRun" class="btn btn-success btn-large"><i class="icon-ok icon-white"></i>Save</button>
+			<button id="clearRun" class="btn btn-danger btn-large"><i class="icon-remove icon-white"></i>Clear</button>
 		</div>
 	</div>
 	<div class="modal none" id="errorModal">
@@ -102,6 +103,6 @@
 <!--<script src='http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1'></script>
 <script src="http://maps.google.com/maps/api/js?v=3.6&amp;sensor=false"></script>-->
 <script src="http://www.openlayers.org/api/OpenLayers.js"></script>
-<script src="runBrowser.js"></script>
+<script src="runBrowser.min.js"></script>
 </body>
 </html>
