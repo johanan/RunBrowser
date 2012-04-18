@@ -201,6 +201,21 @@ appController.prototype.showMap = function(){
 	
 	this.audio.play();
 	
+	var This=this;
+	
+	/*this.audio.addEventListener('timeupdate', function(){
+		console.log(this);
+		if(this.currentTime == this.duration -2){
+			console.log(this);
+			this.pause();
+			this.currentTime = 0;
+			this.play();
+		}
+		});*/
+		
+	this.audio.addEventListener('ended', this.play());
+	//this.audio.currentTime=30;
+	
 	setTimeout(function(){
     window.scrollTo(0, 0);
     }, 0);
