@@ -1,0 +1,22 @@
+CACHE MANIFEST 
+#version 3
+
+CACHE:
+#css cache
+/css/bootstrap.min.css
+/css/bootstrap-responsive.min.css
+/theme/default/style.css
+
+#image cache
+/img/glyphicons-halflings.png
+/img/glyphicons-halflings-white.png
+
+#content and js cache
+/index.html
+/runBrowser.min.js
+/OpenLayers.js
+/
+
+NETWORK:
+*
+FALLBACK: 
