@@ -1,4 +1,5 @@
-function appController(){
+(function(RunBrowser){
+RunBrowser.appController = function(){
 	this.mapView = null;
 	this.runPath = null;
 	this.watchid = null;
@@ -131,7 +132,7 @@ function appController(){
 			datakey = target.parentNode.getAttribute('data-key');
 		}
 		
-		var runp = new runPath();
+		var runp = new RunBrowser.runPath();
 		var old = JSON.parse(localStorage.getItem(datakey));
 		
 		runp.startTime = old.startTime;
@@ -149,7 +150,7 @@ function appController(){
 			this.mapView.destroy();
 		}
 		
-		this.mapView = new mapView();
+		this.mapView = new RunBrowser.mapView();
 		
 		for(var i=0; i<old.pointArray.length; i++ ){
 			this.mapView.addPoint(old.pointArray[i]);
@@ -171,7 +172,7 @@ function appController(){
 		this.showHome();
 	}
 	
-	this.errorHandler = function(error){	
+	this.errorHandler = function(error){
 		this.backdrop.classList.remove('none');
 		this.errorModal.classList.remove('none');
 	}
@@ -187,8 +188,8 @@ function appController(){
 			this.mapView.destroy();
 		}
 		
-		this.mapView = new mapView();
-		this.runPath = new runPath();
+		this.mapView = new RunBrowser.mapView();
+		this.runPath = new RunBrowser.runPath();
 		var This = this;
 		this.watchid = navigator.geolocation.watchPosition(function(location){This.GetLocation(location)}, function(error){This.errorHandler(error)}, {enableHighAccuracy:true, maximumAge: 5000, timeout: 12000 });
 		
@@ -211,10 +212,9 @@ function appController(){
 	    }
 	}
 
-}
+};
 
-
-function mapView(){
+RunBrowser.mapView = function(){
 	this.map = new OpenLayers.Map("map");
 	this.proj = new OpenLayers.Projection("EPSG:4326");
 	this.line = new OpenLayers.Geometry.LineString([]);
@@ -248,7 +248,7 @@ function mapView(){
 	
 }
 
-mapView.prototype.addPoint = function(location){
+RunBrowser.mapView.prototype.addPoint = function(location){
 		opLonLat = new OpenLayers.LonLat( location.coords.longitude, location.coords.latitude );
 		opLonLat.transform(this.proj, this.map.getProjectionObject());
 		point = new OpenLayers.Geometry.Point(opLonLat.lon, opLonLat.lat);
@@ -258,17 +258,17 @@ mapView.prototype.addPoint = function(location){
 		this.map.setCenter(opLonLat);
 	}
 	
-mapView.prototype.destroy = function(){
+RunBrowser.mapView.prototype.destroy = function(){
 		this.map.destroy();
 	}
-
+	
 if (typeof(Number.prototype.toRad) === "undefined") {
   Number.prototype.toRad = function() {
     return this * Math.PI / 180;
   }
 }
 
-	function runPath() {
+	RunBrowser.runPath = function() {
 		this.distance = 0,
 		this.startTime = 0,
 		this.lastUpdateTime = 0,
@@ -351,15 +351,4 @@ if (typeof(Number.prototype.toRad) === "undefined") {
 			return  minMile.toPrecision(4);
 		}
 	}
-
-function init(){
-	var ac = new appController();
-	ac.addEvents();
-	ac.showHome();
-	//hide the top bar in mobile safari
-	setTimeout(function(){
-    window.scrollTo(0, 0);
-    }, 0);
-}
-
-window.addEventListener( 'DOMContentLoaded', init, false);                
+}( window.RunBrowser = window.RunBrowser || {} ));           
