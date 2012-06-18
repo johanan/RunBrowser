@@ -1,4 +1,4 @@
-(function(RunBrowser){
+(function(RunBrowser, $){
 RunBrowser.appController = function(){
 	this.mapView = null;
 	this.runPath = null;
@@ -46,11 +46,11 @@ RunBrowser.appController = function(){
 			this.runPath = null;
 		}
 		
-		this.backdrop.classList.add('none');
-		this.saveModal.classList.add('none');
+		$(this.backdrop).addClass('none');
+		$(this.saveModal).addClass('none');
 		
-		this.mapPage.classList.add('none');
-		this.startPage.classList.remove('none');
+		$(this.mapPage).addClass('none');
+		$(this.startPage).removeClass('none');
 		
 		this.showHome();
 	}
@@ -69,19 +69,19 @@ RunBrowser.appController = function(){
 			this.runPath = null;
 		}
 		
-		this.backdrop.classList.add('none');
-		this.saveModal.classList.add('none');
-		this.errorModal.classList.add('none');
+		$(this.backdrop).addClass('none');
+		$(this.saveModal).addClass('none');
+		$(this.errorModal).addClass('none');
 		
-		this.mapPage.classList.add('none');
-		this.startPage.classList.remove('none');
+		$(this.mapPage).addClass('none');
+		$(this.startPage).removeClass('none');
 	}
 	
 	this.showHome = function(){
 		//clear the old table out
 		var This = this;
 
-		this.table.classList.remove('none');
+		$(this.table).removeClass('none');
 		
 		for(var i=this.table.rows.length;i>1;i--) {
 			this.table.deleteRow(i-1);
@@ -120,7 +120,7 @@ RunBrowser.appController = function(){
 		}
 		
 		if(this.table.rows.length == 1){
-			this.table.classList.add('none');
+			$(this.table).addClass('none');
 		}
 	}
 	
@@ -140,11 +140,11 @@ RunBrowser.appController = function(){
 		runp.lastUpdateTime = old.lastUpdateTime;
 		runp.pointArray = old.pointArray;
 		
-		this.mapPage.classList.remove('none');
-		this.startPage.classList.add('none');
+		$(this.mapPage).removeClass('none');
+		$(this.startPage).addClass('none');
 		
-		this.stop.classList.add('none');
-		this.backButton.classList.remove('none');
+		$(this.stop).addClass('none');
+		$(this.backButton).removeClass('none');
 	
 		if(this.mapView != null){
 			this.mapView.destroy();
@@ -173,16 +173,16 @@ RunBrowser.appController = function(){
 	}
 	
 	this.errorHandler = function(error){
-		this.backdrop.classList.remove('none');
-		this.errorModal.classList.remove('none');
+		$(this.backdrop).removeClass('none');
+		$(this.errorModal).removeClass('none');
 	}
 
 	this.showMap = function(){
-		this.mapPage.classList.remove('none');
-		this.startPage.classList.add('none');
+		$(this.mapPage).removeClass('none');
+		$(this.startPage).addClass('none');
 		
-		this.stop.classList.remove('none');
-		this.backButton.classList.add('none');
+		$(this.stop).removeClass('none');
+		$(this.backButton).addClass('none');
 		
 		if(this.mapView != null){
 			this.mapView.destroy();
@@ -199,8 +199,8 @@ RunBrowser.appController = function(){
 	}
 	
 	this.stopMap = function(){
-		this.backdrop.classList.remove('none');
-		this.saveModal.classList.remove('none');
+		$(this.backdrop).removeClass('none');
+		$(this.saveModal).removeClass('none');
 	}
 	
 	this.GetLocation = function(location){
@@ -351,4 +351,4 @@ if (typeof(Number.prototype.toRad) === "undefined") {
 			return  minMile.toPrecision(4);
 		}
 	}
-}( window.RunBrowser = window.RunBrowser || {} ));           
+}( window.RunBrowser = window.RunBrowser || {}, window.Zepto ));           
