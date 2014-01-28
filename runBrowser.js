@@ -28,6 +28,7 @@ RunBrowser.appController = function(){
 		this.clearButton.addEventListener("click", function(){This.clearRun()});
 		this.backButton.addEventListener("click", function(){This.clearRun()});
 		this.clearError.addEventListener("click", function(){This.clearRun()});
+        this.table.addEventListener("click", this.tableClick.bind(this));
 	}
 	
 	this.saveRun = function(){
@@ -78,46 +79,45 @@ RunBrowser.appController = function(){
 	}
 	
 	this.showHome = function(){
-		//clear the old table out
 		var This = this;
 
 		$(this.table).removeClass('none');
-		
-		for(var i=this.table.rows.length;i>1;i--) {
-			this.table.deleteRow(i-1);
-		}
+
+        var tableLength = this.table.rows.length - 1; //header row
+        var rowCount = 1;
 		
 		for (var key in localStorage){
-			var old = JSON.parse(localStorage.getItem(key));
-		   
-		   var rowCount = this.table.rows.length;
-			var row = this.table.insertRow(rowCount);
-			
-			var cellRemove = row.insertCell(0);
-			var rm = document.createElement("button");
-		    rm.className = "btn btn-danger";
-		    rm.innerHTML = '<i class="icon-remove icon-white"></i>';
-		    rm.setAttribute('data-key', key);
-		    rm.addEventListener('click', function(evt){This.removeSavedRun(evt.target)});
-		    cellRemove.appendChild(rm);
-			
-			var celldate = row.insertCell(1);
-			var startDate = new Date(old.startTime);
-		    var datetext = document.createTextNode(startDate.toDateString());
-		    celldate.appendChild(datetext);
-		 
-		    var celldist = row.insertCell(2);
-		    var disttext = document.createTextNode(Math.round(old.distance*100)/100);
-		    celldist.appendChild(disttext);
-		 
-		    var cellbutton = row.insertCell(3);
-		    var butt = document.createElement("button");
-		    butt.className = "btn btn-inverse";
-		    butt.innerHTML = '<i class="icon-chevron-right icon-white"></i>';
-		    butt.setAttribute('data-key', key);
-		    butt.addEventListener('click', function(evt){This.loadSavedRun(evt.target)});
-		    cellbutton.appendChild(butt);
-		}
+            if (rowCount > tableLength) {
+                var old = JSON.parse(localStorage.getItem(key));
+
+               var rowCount = this.table.rows.length;
+                var row = this.table.insertRow(rowCount);
+
+                var cellRemove = row.insertCell(0);
+                var rm = document.createElement("button");
+                rm.className = "btn btn-danger delete-run";
+                rm.innerText = 'Delete';
+                rm.setAttribute('data-key', key);
+                cellRemove.appendChild(rm);
+
+                var celldate = row.insertCell(1);
+                var startDate = new Date(old.startTime);
+                var datetext = document.createTextNode(startDate.toDateString());
+                celldate.appendChild(datetext);
+
+                var celldist = row.insertCell(2);
+                var disttext = document.createTextNode(Math.round(old.distance*100)/100);
+                celldist.appendChild(disttext);
+
+                var cellbutton = row.insertCell(3);
+                var butt = document.createElement("button");
+                butt.className = "btn btn-inverse view-run";
+                butt.innerText = 'View';
+                butt.setAttribute('data-key', key);
+                cellbutton.appendChild(butt);
+            }
+            rowCount++;
+        }
 		
 		if(this.table.rows.length == 1){
 			$(this.table).addClass('none');
@@ -211,6 +211,16 @@ RunBrowser.appController = function(){
 			this.mapView.updateSpeeds(this.runPath.getCurrentMph(), this.runPath.getMinMile());
 	    }
 	}
+
+    this.tableClick = function tableClick(e){
+        var $e = $(e.target);
+        if ($e[0].tagName === 'BUTTON' && $e.hasClass("delete-run")) {
+            this.removeSavedRun(e.target);
+            $e.parent().parent().remove();
+        }else if ($e[0].tagName === 'BUTTON' && $e.hasClass("view-run")) {
+            this.loadSavedRun(e.target);
+        }
+    };
 
 };
 
