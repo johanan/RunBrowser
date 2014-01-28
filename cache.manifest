@@ -6,15 +6,22 @@ CACHE:
 /css/bootstrap.min.css
 /css/bootstrap-responsive.min.css
 /theme/default/style.css
+/leaflet.css
 
 #image cache
 /img/glyphicons-halflings.png
 /img/glyphicons-halflings-white.png
+/images/layers.png
+/images/layers-2x.png
+/images/marker-icon.png
+/images/marker-icon-2x.png
+/images/marker-shadow.png
 
 #content and js cache
 /index.html
 /runBrowser.min.js
 /OpenLayers.js
+/leaflet.js
 /
 
 NETWORK:
