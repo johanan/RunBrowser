@@ -5,7 +5,6 @@ CACHE:
 #css cache
 /css/bootstrap.min.css
 /css/bootstrap-responsive.min.css
-/theme/default/style.css
 /leaflet.css
 
 #image cache
@@ -20,7 +19,6 @@ CACHE:
 #content and js cache
 /index.html
 /runBrowser.min.js
-/OpenLayers.js
 /leaflet.js
 /
 

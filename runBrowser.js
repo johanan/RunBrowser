@@ -19,6 +19,14 @@ RunBrowser.appController = function(){
 	this.clearError = document.getElementById('clearError');
 	this.saveModal = document.getElementById('saveModal');
 	this.backdrop = document.getElementById('backdrop');
+
+    this.init = function init(){
+        this.mapView = new RunBrowser.mapView();
+        navigator.geolocation.getCurrentPosition(this.mapView.centerMap, function(){}, {enableHighAccuracy:true, maximumAge: 5000, timeout: 6000 });
+
+        this.addEvents();
+        this.showHome();
+    };
 	
 	this.addEvents = function(){
 		var This = this;
@@ -33,10 +41,8 @@ RunBrowser.appController = function(){
 	
 	this.saveRun = function(){
 		localStorage.setItem(this.runPath.startTime, JSON.stringify(this.runPath));
-		
-		if(this.mapView != null){
-			this.mapView.destroy();
-		}
+
+	    this.mapView.destroy();
 		
 		if(this.watchid != null){
 			navigator.geolocation.clearWatch(this.watchid);
@@ -57,9 +63,7 @@ RunBrowser.appController = function(){
 	}
 	
 	this.clearRun = function(){
-		if(this.mapView != null){
-			this.mapView.destroy();
-		}
+	    this.mapView.destroy();
 		
 		if(this.watchid != null){
 			navigator.geolocation.clearWatch(this.watchid);
@@ -145,12 +149,8 @@ RunBrowser.appController = function(){
 		
 		$(this.stop).addClass('none');
 		$(this.backButton).removeClass('none');
-	
-		if(this.mapView != null){
-			this.mapView.destroy();
-		}
-		
-		this.mapView = new RunBrowser.mapView();
+
+		this.mapView.destroy();
 		
 		for(var i=0; i<old.pointArray.length; i++ ){
 			this.mapView.addPoint(old.pointArray[i]);
@@ -187,8 +187,7 @@ RunBrowser.appController = function(){
 		if(this.mapView != null){
 			this.mapView.destroy();
 		}
-		
-		this.mapView = new RunBrowser.mapView();
+
 		this.runPath = new RunBrowser.runPath();
 		var This = this;
 		this.watchid = navigator.geolocation.watchPosition(function(location){This.GetLocation(location)}, function(error){This.errorHandler(error)}, {enableHighAccuracy:true, maximumAge: 5000, timeout: 12000 });
@@ -221,30 +220,21 @@ RunBrowser.appController = function(){
             this.loadSavedRun(e.target);
         }
     };
-
+    this.init();
 };
 
 RunBrowser.mapView = function(){
-	this.map = new OpenLayers.Map("map");
-	this.proj = new OpenLayers.Projection("EPSG:4326");
-	this.line = new OpenLayers.Geometry.LineString([]);
-	this.lineLayer = new OpenLayers.Layer.Vector("Line Layer");
-	
-	this.timeSpan = document.getElementById('time');
+    this.map = new L.Map("map");
+    var osmUrl='http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    var osmAttrib='Map data © openstreetmap contributors';
+    var osm = new L.TileLayer(osmUrl,{minZoom:8,maxZoom:18,attribution:osmAttrib});
+    this.map.addLayer(osm);
+    this.line = L.polyline([], {color: 'red'}).addTo(this.map);
+
+    this.timeSpan = document.getElementById('time');
 	this.distance = document.getElementById('distance');
 	this.mph = document.getElementById('mph');
 	this.minMile = document.getElementById('minMile');
-	
-	var layer = new OpenLayers.Layer.OSM();
-	
-	this.map.addControl(new OpenLayers.Control.DrawFeature(this.lineLayer, OpenLayers.Handler.Path));                                     
-    var style = { strokeColor: '#0000ff', strokeOpacity: 0.5, strokeWidth: 5 };
-
-    var lineFeature = new OpenLayers.Feature.Vector(this.line, null, style);
-    this.lineLayer.addFeatures([lineFeature]);
-     
-	this.map.addLayers([layer, this.lineLayer]);
-	this.map.zoomTo(15);
 	
 	this.updateTimeDistance = function(time, distance){
 		this.timeSpan.innerHTML =  time;
@@ -259,18 +249,20 @@ RunBrowser.mapView = function(){
 }
 
 RunBrowser.mapView.prototype.addPoint = function(location){
-		opLonLat = new OpenLayers.LonLat( location.coords.longitude, location.coords.latitude );
-		opLonLat.transform(this.proj, this.map.getProjectionObject());
-		point = new OpenLayers.Geometry.Point(opLonLat.lon, opLonLat.lat);
-		
-		this.line.addComponent(point);
-		this.lineLayer.redraw();
-		this.map.setCenter(opLonLat);
-	}
+        var hull = new L.LatLng(location.coords.latitude, location.coords.longitude);
+        this.map.setView(hull, 15);
+        this.line.addLatLng(hull);
+	};
 	
 RunBrowser.mapView.prototype.destroy = function(){
-		this.map.destroy();
-	}
+		this.map.removeLayer(this.line);
+        this.line = L.polyline([], {color: 'red'}).addTo(this.map);
+	};
+
+RunBrowser.mapView.prototype.centerMap = function centerMap(location){
+    var hull = new L.LatLng(location.coords.latitude, location.coords.longitude);
+    this.map.setView(hull, 15);
+};
 	
 if (typeof(Number.prototype.toRad) === "undefined") {
   Number.prototype.toRad = function() {

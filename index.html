@@ -13,12 +13,13 @@
 	
 	<link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/bootstrap-responsive.min.css" rel="stylesheet">
+    <link href="leaflet.css" rel="stylesheet">
     <style>
     	body { min-height:420px;}
     	
     	.none { display: none; }
     	
-    	#map { height: 220px;}
+    	#map { min-height: 220px;}
     </style>
 </head>
 <body class="container">
@@ -107,13 +108,11 @@
 <!--<script src='http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1'></script>
 <script src="http://maps.google.com/maps/api/js?v=3.6&amp;sensor=false"></script>-->
 <script src="zepto.min.js"></script>
-<script src="OpenLayers.js"></script>
+<script src="leaflet.js"></script>
 <script src="runBrowser.js"></script>
 <script>
 function init(){
 	var ac = new RunBrowser.appController();
-	ac.addEvents();
-	ac.showHome();
 	//hide the top bar in mobile safari
 	setTimeout(function(){
     window.scrollTo(0, 0);
