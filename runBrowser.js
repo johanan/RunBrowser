@@ -22,7 +22,7 @@ RunBrowser.appController = function(){
 
     this.init = function init(){
         this.mapView = new RunBrowser.mapView();
-        navigator.geolocation.getCurrentPosition(this.mapView.centerMap, function(){}, {enableHighAccuracy:true, maximumAge: 5000, timeout: 6000 });
+        navigator.geolocation.getCurrentPosition(this.mapView.centerMap.bind(this.mapView), function(){}, {enableHighAccuracy:true, maximumAge: 5000, timeout: 6000 });
 
         this.addEvents();
         this.showHome();
