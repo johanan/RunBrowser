@@ -3,6 +3,8 @@ RunBrowser.appController = function(){
 	this.mapView = null;
 	this.runPath = null;
 	this.watchid = null;
+    this.timerid = null;
+    this.startTime = null;
 	
 	//cached elements
 	this.mapPage = document.getElementById('mapPage');
@@ -60,6 +62,7 @@ RunBrowser.appController = function(){
 		$(this.startPage).removeClass('none');
 		
 		this.showHome();
+        this.stopClock();
 	}
 	
 	this.clearRun = function(){
@@ -80,6 +83,7 @@ RunBrowser.appController = function(){
 		
 		$(this.mapPage).addClass('none');
 		$(this.startPage).removeClass('none');
+        this.stopClock();
 	}
 	
 	this.showHome = function(){
@@ -175,6 +179,7 @@ RunBrowser.appController = function(){
 	this.errorHandler = function(error){
 		$(this.backdrop).removeClass('none');
 		$(this.errorModal).removeClass('none');
+        this.stopClock();
 	}
 
 	this.showMap = function(){
@@ -190,11 +195,8 @@ RunBrowser.appController = function(){
 
 		this.runPath = new RunBrowser.runPath();
 		var This = this;
-		this.watchid = navigator.geolocation.watchPosition(function(location){This.GetLocation(location)}, function(error){This.errorHandler(error)}, {enableHighAccuracy:true, maximumAge: 5000, timeout: 12000 });
-		
-		setTimeout(function(){
-	    window.scrollTo(0, 0);
-	    }, 0);
+		this.watchid = navigator.geolocation.watchPosition(function(location){This.GetLocation(location)}, function(error){This.errorHandler(error)}, {enableHighAccuracy:true, maximumAge: 6000, timeout: 12000 });
+		this.startClock();
 	}
 	
 	this.stopMap = function(){
@@ -206,9 +208,10 @@ RunBrowser.appController = function(){
 		if(ptTest = this.runPath.addPoint(location))
 		{
 			this.mapView.addPoint(location);
-			this.mapView.updateTimeDistance(this.runPath.getElapsedFormat(), this.runPath.getDistance());
 			this.mapView.updateSpeeds(this.runPath.getCurrentMph(), this.runPath.getMinMile());
+            this.mapView.updateDistance(this.runPath.getDistance());
 	    }
+
 	}
 
     this.tableClick = function tableClick(e){
@@ -220,37 +223,65 @@ RunBrowser.appController = function(){
             this.loadSavedRun(e.target);
         }
     };
+
+    this.startClock = function(){
+        this.stopClock();
+
+        this.startTime = new Date().getTime();
+        this.timerid = setInterval(function(){
+            this.mapView.updateTime((new Date().getTime() - this.startTime));
+        }.bind(this), 1000);
+    };
+
+    this.stopClock = function(){
+        if (this.timerid !== null) {
+            clearInterval(this.timerid);
+            this.timerid = null;
+        }
+    };
+
     this.init();
 };
 
 RunBrowser.mapView = function(){
-    this.map = new L.Map("map");
-    var osmUrl='http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-    var osmAttrib='Map data © openstreetmap contributors';
-    var osm = new L.TileLayer(osmUrl,{minZoom:8,maxZoom:18,attribution:osmAttrib});
-    this.map.addLayer(osm);
+    this.map = new L.Map("map", {zoomControl: false});
+    var layer = new L.StamenTileLayer("watercolor");
+    this.map.addLayer(layer);
     this.line = L.polyline([], {color: 'red'}).addTo(this.map);
 
     this.timeSpan = document.getElementById('time');
 	this.distance = document.getElementById('distance');
 	this.mph = document.getElementById('mph');
 	this.minMile = document.getElementById('minMile');
-	
-	this.updateTimeDistance = function(time, distance){
-		this.timeSpan.innerHTML =  time;
-		this.distance.innerHTML =  distance;
-	}
+
+    this.updateDistance = function(distance){
+        this.distance.innerHTML =  distance;
+    };
+
+    this.updateTime = function(time){
+        this.timeSpan.innerHTML =  this.getElapsedFormat(time);
+    };
 	
 	this.updateSpeeds = function(mph, minMile){
 		this.mph.innerHTML =  mph;
 		this.minMile.innerHTML =  minMile;
 	}
+
+    this.getElapsedFormat = function(diff){
+        //get minutes
+        var mins = Math.floor(diff/1000/60);
+        diff -= mins*60000;
+        //get seconds
+        var secs = Math.floor(diff/1000);
+        secs = (secs < 10 ? '0' : '') + secs
+        return mins + ":" + secs;
+    };
 	
 }
 
 RunBrowser.mapView.prototype.addPoint = function(location){
         var hull = new L.LatLng(location.coords.latitude, location.coords.longitude);
-        this.map.setView(hull, 15);
+        this.map.setView(hull);
         this.line.addLatLng(hull);
 	};
 	
@@ -270,87 +301,72 @@ if (typeof(Number.prototype.toRad) === "undefined") {
   }
 }
 
-	RunBrowser.runPath = function() {
-		this.distance = 0,
-		this.startTime = 0,
-		this.lastUpdateTime = 0,
-		this.pointArray = [],
-		this.addPoint = function(point) {
-			if(point.coords.accuracy <= 25 && (point.timestamp - this.lastUpdateTime)>= 6000 || this.lastUpdateTime == 0)
-			{
-				var now = new Date().getTime();
-				this.pointArray.push(point);
-				this.lastUpdateTime = now;
-				
-				if(this.startTime == 0){
-					this.startTime = now;
-				}
-				
-				if(this.pointArray.length >= 2){
-					var arraylen = this.pointArray.length;
-					this.distance += this.computeDistance(this.pointArray[arraylen -2], this.pointArray[arraylen -1]);
-				}
-				
-				return point;
-			}
-			
-			return false;
-		},
-		
-		this.computeDistance = function(point1, point2){
-		
-			var lon1 = point1.coords.longitude;
-			var lon2 = point2.coords.longitude;
-			var lat1 = point1.coords.latitude;
-			var lat2 = point2.coords.latitude;
-			
-			var R = 3958.7558657440545; // miles
-			var dLat = (lat2-lat1).toRad();
-			var dLon = (lon2-lon1).toRad();
-			var lat1 = lat1.toRad();
-			var lat2 = lat2.toRad();
-			
-			var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-			        Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2); 
-			var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-			var d = R * c;
-			
-			return d;
-		},
-		
-		this.getDistance = function (){
-			return this.distance.toPrecision(4);
-		},
-		
-		this.getElapsed = function(){
-			return (this.lastUpdateTime - this.startTime)/60000; //time elapsed in minutes
-		},
-		
-		this.getElapsedFormat = function(){
-			var diff = this.lastUpdateTime - this.startTime;
-			//get minutes
-			var mins = Math.floor(diff/1000/60);
-			diff -= mins*60000;
-			//get seconds
-			var secs = Math.floor(diff/1000);
-			secs = (secs < 10 ? '0' : '') + secs
-			return mins + ":" + secs;
-		},
-		
-		this.getCurrentMph = function(){
-			return (this.pointArray[this.pointArray.length -1].coords.speed * 2.23693629).toPrecision(4);
-		},
-		
-		this.getMph = function(){
-			return this.distance / (this.getElapsed()/60); //mph
-		},
-		
-		this.getMinMile = function(){
-			var minMile = this.getElapsed() / this.distance;
-			if (isNaN(minMile)){
-				return 0;
-			}
-			return  minMile.toPrecision(4);
-		}
-	}
+RunBrowser.runPath = function() {
+    this.distance = 0,
+    this.startTime = new Date().getTime(),
+    this.lastUpdateTime = 0,
+    this.pointArray = [],
+    this.addPoint = function(point) {
+        if(point.coords.accuracy <= 25 && (point.timestamp - this.lastUpdateTime)>= 6000 || this.lastUpdateTime == 0)
+        {
+            var now = new Date().getTime();
+            this.pointArray.push(point);
+            this.lastUpdateTime = now;
+
+            if(this.pointArray.length >= 2){
+                var arraylen = this.pointArray.length;
+                this.distance += this.computeDistance(this.pointArray[arraylen -2], this.pointArray[arraylen -1]);
+            }
+
+            return point;
+        }
+
+        return false;
+    },
+
+    this.computeDistance = function(point1, point2){
+
+        var lon1 = point1.coords.longitude;
+        var lon2 = point2.coords.longitude;
+        var lat1 = point1.coords.latitude;
+        var lat2 = point2.coords.latitude;
+
+        var R = 3958.7558657440545; // miles
+        var dLat = (lat2-lat1).toRad();
+        var dLon = (lon2-lon1).toRad();
+        var lat1 = lat1.toRad();
+        var lat2 = lat2.toRad();
+
+        var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        var d = R * c;
+
+        return d;
+    },
+
+    this.getDistance = function (){
+        return this.distance.toPrecision(3);
+    },
+
+    this.getElapsed = function(){
+        return (new Date().getTime() - this.startTime)/60000; //time elapsed in minutes
+    },
+
+    this.getCurrentMph = function(){
+        return (this.pointArray[this.pointArray.length -1].coords.speed * 2.23693629).toPrecision(3);
+    },
+
+    this.getMph = function(){
+        return this.distance / (this.getElapsed()/60); //mph
+    },
+
+    this.getMinMile = function(){
+        var minMile = this.getElapsed() / this.distance;
+        if (isNaN(minMile)){
+            return 0;
+        }
+        return  minMile.toPrecision(3);
+    }
+}
 }( window.RunBrowser = window.RunBrowser || {}, window.Zepto ));           

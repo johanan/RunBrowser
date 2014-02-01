@@ -1,6 +1,5 @@
 <!DOCTYPE  html>
-<!--<html manifest="/cache.manifest">-->
-<html>
+<html manifest="/cache.manifest">
 <head>
 	<title>RunBrowser!</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,22 +14,41 @@
     <link href="css/bootstrap-responsive.min.css" rel="stylesheet">
     <link href="leaflet.css" rel="stylesheet">
     <style>
-    	body { min-height:420px;}
-    	
-    	.none { display: none; }
-    	
-    	#map { min-height: 220px;}
+    	body .none { display: none; }
+
+        .overlay{
+            position:fixed;
+            width:100%;
+            height:100%;
+            top:0px;
+            left:0px;
+            z-index: -1;
+        }
+
+        .main {
+            padding: 10px 60px;
+            text-shadow: 1px 1px 1px #000;
+        }
+
+        .top-info {
+            background: rgba(204,204,204, 0.8);
+            padding: 10px;
+        }
+
+        #time {
+            font-size: 2em;;
+        }
+
+        .block {display: block;}
     </style>
 </head>
 <body class="container">
-	<div id="startPage">
-		<div class="hero-unit">
+	<div id="startPage" class="top-info">
+		<div class="main">
 			<h1 class="hidden-phone">RunBrowser!</h1>
 			<h2 class="visible-phone">RunBrowser!</h2>
 			<p>Are you ready? Let's GO!</p>
-			<p class="hidden-phone">This site was designed for a phone, but you are more then welcome to run around with your laptop.</p>
-			<p class="visible-phone">Don't forget to set your phone to the highest auto-lock setting.</p>
-			<button class="btn btn-success btn-large" id="showMap"><i class="icon-map-marker icon-white"></i>START!</button>
+			<button class="btn btn-success btn-large" id="showMap">START!</button>
 		</div>
 		<table class="table table-striped" id="savedRuns">
 		  <thead>
@@ -44,35 +62,29 @@
 		  <tbody >
 		  </tbody>
 		</table>
+        <footer>
+            Designed and built by <a href="http://ejosh.co/de">Joshua Johanan.</a><br/>
+            View source at <a href="https://github.com/johanan/RunBrowser">Github.</a><br/>
+            Special thanks to <a href="http://twitter.github.com/bootstrap/index.html">Bootstrap</a>, <a href="http://leafletjs.com/">Leaflet</a>,
+            <a href="http://stamen.com/">Stamen Design</a>, and <a href="http://www.movable-type.co.uk/scripts/latlong.html">Movable Type</a>
+        </footer>
 	</div>
 	<div id="mapPage" class="none">
-		<table class="table table-striped" id="runInfo">
-		  <tbody >
-		  	<tr>
-		  		<td>Time:</td>
-		  		<td><span id="time"></span></td>
-		  	</tr>
-		  	<tr>
-		  		<td>Distance:</td>
-		  		<td><span id="distance"></span></td>
-		  	</tr>
-		  	<tr>
-		  		<td>Speed:</td>
-		  		<td><span id="mph"></span></td>
-		  	</tr>
-		  	<tr>
-		  		<td>Min/Mile:</td>
-		  		<td><span id="minMile"></span></td>
-		  	</tr>
-		  	<tr>
-		  		<td colspan="2">
-		  			<button class="btn btn-inverse" id="stop">Done</button>
-					<button class="btn btn-inverse" id="back"><i class="icon-chevron-left icon-white"></i>Back</button>
-		  		</td>
-		  	</tr>
-		  </tbody>
-		</table>
-		<div id="map"></div>
+        <div class="top-info">
+            <span id="time">0:00</span>
+
+            Distance:
+            <span id="distance"></span>
+
+            Speed:
+            <span id="mph"></span>
+
+            Min/Mile:
+            <span id="minMile"></span>
+
+            <button class="btn btn-inverse block" id="stop">Done</button>
+            <button class="btn btn-inverse block none" id="back">Back</button>
+        </div>
 	</div>
 	<div class="modal none" id="saveModal">
 		<div class="modal-header">
@@ -82,8 +94,8 @@
     		<p>Do you want to save your run?</p>
   		</div>
   		<div class="modal-footer">
-			<button id="saveRun" class="btn btn-success btn-large"><i class="icon-ok icon-white"></i>Save</button>
-			<button id="clearRun" class="btn btn-danger btn-large"><i class="icon-remove icon-white"></i>Clear</button>
+			<button id="saveRun" class="btn btn-success btn-large">Save</button>
+			<button id="clearRun" class="btn btn-danger btn-large">Clear</button>
 		</div>
 	</div>
 	<div class="modal none" id="errorModal">
@@ -98,23 +110,15 @@
 		</div>
 	</div>
 	<div class="modal-backdrop none" id="backdrop"></div>
-	<hr/>
-	<footer>
-		Designed and built by <a href="http://ejosh.co/de">Joshua Johanan.</a><br/>
-		View source at <a href="https://github.com/johanan/RunBrowser">Github.</a><br/>
-		Special thanks to <a href="http://twitter.github.com/bootstrap/index.html">Bootstrap</a>, <a href="http://openlayers.org/">Open Layers</a>, and <a href="http://www.movable-type.co.uk/scripts/latlong.html">Movable Type</a>
-	</footer>
+    <div id="map" class="overlay"></div>
 
 <script src="zepto.min.js"></script>
 <script src="leaflet.js"></script>
-<script src="runBrowser.js"></script>
+<script src="runBrowser.min.js"></script>
+<script src="stamen.js"></script>
 <script>
 function init(){
 	var ac = new RunBrowser.appController();
-	//hide the top bar in mobile safari
-	setTimeout(function(){
-    window.scrollTo(0, 0);
-    }, 0);
 }
 
 window.addEventListener( 'DOMContentLoaded', init, false);     

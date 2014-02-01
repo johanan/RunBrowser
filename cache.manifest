@@ -20,6 +20,7 @@ CACHE:
 /index.html
 /runBrowser.min.js
 /leaflet.js
+/stamen.js
 /
 
 NETWORK:
