@@ -1,5 +1,5 @@
 CACHE MANIFEST 
-#version 4
+#version 5
 
 CACHE:
 #css cache
@@ -21,6 +21,7 @@ CACHE:
 /runBrowser.min.js
 /leaflet.js
 /stamen.js
+/zepto.min.js
 /
 
 NETWORK:
